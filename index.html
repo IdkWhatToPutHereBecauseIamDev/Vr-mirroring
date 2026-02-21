@@ -1,15 +1,28 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
+    <!-- Using 1.5.0 which is the most stable for Quest Browser -->
     <script src="https://aframe.io"></script>
+    <style>
+      body { background-color: #000; margin: 0; overflow: hidden; }
+    </style>
   </head>
-  <body style="background: black;">
-    <a-scene>
+  <body>
+    <!-- 'renderer' settings help prevent the black screen on mobile chips -->
+    <a-scene renderer="antialias: true; colorManagement: true; sortObjects: true;">
+      
+      <!-- Basic Shapes to test if rendering works -->
       <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
       <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
       <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      <a-sky color="#ECECEC"></a-sky>
+      
+      <!-- A bright sky to prove the camera is working -->
+      <a-sky color="#87CEEB"></a-sky>
+
+      <!-- Standard Camera -->
+      
+
     </a-scene>
   </body>
 </html>
