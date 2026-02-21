@@ -1,48 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <title>VR Movement Test</title>
-    <!-- Use the most stable A-Frame version -->
     <script src="https://aframe.io"></script>
-    <script src="https://cdn.jsdelivr.net"></script>
-
-    <script>
-      // Movement Logic
-      AFRAME.registerComponent('movement-logic', {
-        init: function () {
-          this.modes = ['none', 'walking', 'gorilla', 'hooks'];
-          this.index = 0;
-          this.text = document.querySelector('#status-text');
-          
-          this.el.addEventListener('xbuttondown', () => {
-            this.index = (this.index + 1) % this.modes.length;
-            this.text.setAttribute('value', "MODE: " + this.modes[this.index].toUpperCase());
-          });
-        }
-      });
-    </script>
   </head>
-  <body style="background-color: #111;"> <!-- Dark background helps confirm if 3D failed -->
-    <a-scene physics="debug: false">
-      
-      <!-- Basic World (If you see this, the white screen is gone!) -->
-      <a-sky color="#6EBAFF"></a-sky>
-      <a-plane static-body rotation="-90 0 0" width="20" height="20" color="#222"></a-plane>
-      <a-box static-body position="0 0.5 -3" color="red"></a-box>
-
-      <!-- Player -->
-      
-        
-        
-        <!-- Left Hand with Text -->
-        
-          <a-text id="status-text" value="PRESS X TO START" position="0 0.1 0" rotation="-90 0 0" scale="0.2 0.2 0.2" align="center" color="yellow"></a-text>
-        
-
-        
-      
-
+  <body style="background: black;">
+    <a-scene>
+      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
+      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
+      <a-cylinder position="1 0.75 -3" radius="0.5" height="1.5" color="#FFC65D"></a-cylinder>
+      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
     </a-scene>
   </body>
 </html>
