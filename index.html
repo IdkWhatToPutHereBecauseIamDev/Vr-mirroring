@@ -1,18 +1,87 @@
-<a-scene networked-scene="room: movement-test; adapter: socketio;">
-  
-  
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Multi-Movement VR</title>
+    <!-- Essential Libraries -->
+    <script src="https://aframe.io"></script>
+    <script src="https://cdn.jsdelivr.net"></script>
     
+    <script>
+      // 1. MOVEMENT SWITCHER LOGIC
+      AFRAME.registerComponent('movement-manager', {
+        init: function () {
+          this.modes = ['none', 'joystick', 'gorilla', 'hooks'];
+          this.index = 0;
+          this.text = document.querySelector('#menu-text');
+          
+          // Listen for X button (Left) or B button (Right)
+          this.el.addEventListener('xbuttondown', () => this.cycle());
+          this.el.addEventListener('bbuttondown', () => this.cycle());
+        },
+        cycle: function () {
+          this.index = (this.index + 1) % this.modes.length;
+          const mode = this.modes[this.index];
+          this.text.setAttribute('value', "MODE: " + mode.toUpperCase());
+          console.log("Switched to:", mode);
+        }
+      });
 
-    <!-- Left Hand: Displays Status and Switches Modes -->
-    
-        <a-text id="movement-text" value="NO MOVEMENT SELECTED" 
-                position="0 0.1 0" rotation="-90 0 0" scale="0.3 0.3 0.3" align="center" color="yellow">
-        </a-text>
-    
+      // 2. GORILLA & HOOK PHYSICS LOGIC
+      AFRAME.registerComponent('hand-physics', {
+        init: function () {
+          this.prevPos = new THREE.Vector3();
+          this.isGrabbing = false;
 
-    <!-- Right Hand -->
-    
-  
+          this.el.addEventListener('triggerdown', () => { this.isGrabbing = true; });
+          this.el.addEventListener('triggerup', () => { this.isGrabbing = false; });
+          
+          // Collision for Gorilla Movement
+          this.el.addEventListener('collide', (e) => {
+            const manager = document.querySelector('[movement-manager]').components['movement-manager'];
+            if (manager.modes[manager.index] === 'gorilla') {
+              let velocity = new THREE.Vector3().copy(this.el.object3D.position).sub(this.prevPos);
+              document.querySelector('#player').object3D.position.sub(velocity.multiplyScalar(5));
+            }
+          });
+        },
+        tick: function () {
+          const manager = document.querySelector('[movement-manager]').components['movement-manager'];
+          const player = document.querySelector('#player');
+          
+          // HOOKS (Crowbar) Logic
+          if (manager.modes[manager.index] === 'hooks' && this.isGrabbing) {
+             // Pull player toward hand movement
+             let delta = new THREE.Vector3().copy(this.el.object3D.position).sub(this.prevPos);
+             player.object3D.position.sub(delta);
+          }
+          this.prevPos.copy(this.el.object3D.position);
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene physics="debug: false; gravity: -9.8;">
+      
+      <!-- PLAYER RIG -->
+      
+        
+        
+        <!-- LEFT HAND (Menu & Physics) -->
+        
+          <a-text id="menu-text" value="MODE: NONE" position="0 0.1 0" rotation="-90 0 0" scale="0.2 0.2 0.2" align="center" color="yellow"></a-text>
+        
 
-  <a-plane static-body rotation="-90 0 0" width="100" height="100" color="#222"></a-plane>
-</a-scene>
+        <!-- RIGHT HAND (Physics) -->
+        
+      
+
+      <!-- ENVIRONMENT -->
+      <a-sky color="#87CEEB"></a-sky>
+      <a-plane class="wall" static-body rotation="-90 0 0" width="100" height="100" color="#333"></a-plane>
+      <a-box class="wall" static-body position="0 1 -5" color="blue"></a-box>
+      <a-box class="wall" static-body position="-3 2 -3" color="red"></a-box>
+
+    </a-scene>
+  </body>
+</html>
