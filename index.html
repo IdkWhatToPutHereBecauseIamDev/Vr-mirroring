@@ -1,28 +1,133 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <!-- Using 1.5.0 which is the most stable for Quest Browser -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Mirror Link</title>
+    <script src="https://unpkg.com"></script>
     <script src="https://aframe.io"></script>
     <style>
-      body { background-color: #000; margin: 0; overflow: hidden; }
+        body { font-family: sans-serif; background: #111; color: white; text-align: center; margin: 0; }
+        #ui { padding: 20px; }
+        .hidden { display: none; }
+        .btn { background: #0072ce; color: white; border: none; padding: 15px 30px; margin: 10px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        #room-code-display { font-size: 40px; color: #00d4ff; margin: 20px; font-weight: bold; }
+        
+        /* PS5 Style Blue Circle */
+        .click-indicator {
+            position: absolute; width: 50px; height: 50px; border: 3px solid #0072ce;
+            border-radius: 50%; background: rgba(0, 114, 206, 0.3);
+            pointer-events: none; transform: translate(-50%, -50%);
+            animation: pulse 0.6s ease-out forwards; z-index: 9999;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        video { width: 80%; border: 2px solid #333; margin-top: 20px; }
     </style>
-  </head>
-  <body>
-    <!-- 'renderer' settings help prevent the black screen on mobile chips -->
-    <a-scene renderer="antialias: true; colorManagement: true; sortObjects: true;">
-      
-      <!-- Basic Shapes to test if rendering works -->
-      <a-box position="-1 0.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
-      <a-sphere position="0 1.25 -5" radius="1.25" color="#EF2D5E"></a-sphere>
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-      
-      <!-- A bright sky to prove the camera is working -->
-      <a-sky color="#87CEEB"></a-sky>
+</head>
+<body>
 
-      <!-- Standard Camera -->
-      
+<div id="ui">
+    <h1>VR Mirror System</h1>
+    <div id="setup">
+        <p>Choose your role:</p>
+        <button class="btn" onclick="startHost()">HOST (PC/iOS/Android)</button>
+        <button class="btn" onclick="startViewer()">VIEWER (VR Headset)</button>
+    </div>
 
-    </a-scene>
-  </body>
+    <div id="host-zone" class="hidden">
+        <p>Your Connection Code:</p>
+        <div id="room-code-display">----</div>
+        <p>Share this code with the VR headset.</p>
+        <video id="local-preview" autoplay muted playsinline></video>
+    </div>
+
+    <div id="viewer-zone" class="hidden">
+        <input type="text" id="join-code" placeholder="Enter 4-Digit Code" style="padding: 10px; font-size: 20px;">
+        <button class="btn" onclick="connectToHost()">Connect & Enter VR</button>
+    </div>
+</div>
+
+<!-- VR Scene (Hidden until active) -->
+<a-scene id="vr-scene" class="hidden" embedded>
+    <a-assets><video id="vr-video" autoplay playsinline crossorigin="anonymous"></video></a-assets>
+    <a-video src="#vr-video" width="16" height="9" position="0 2 -5" class="clickable"></a-video>
+    <a-sky color="#000"></a-sky>
+    
+    
+</a-scene>
+
+<script>
+    let peer, conn, stream;
+
+    // --- HOST LOGIC ---
+    async function startHost() {
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('host-zone').classList.remove('hidden');
+
+        try {
+            // Screen Capture
+            stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            document.getElementById('local-preview').srcObject = stream;
+
+            // Initialize Peer with a Random 4-digit ID
+            const shortId = Math.floor(1000 + Math.random() * 9000).toString();
+            peer = new Peer(shortId);
+            document.getElementById('room-code-display').innerText = shortId;
+
+            peer.on('call', (call) => {
+                call.answer(stream); // Send screen to VR
+            });
+
+            peer.on('connection', (c) => {
+                conn = c;
+                conn.on('data', (data) => {
+                    if (data.type === 'click') showClick(data.x, data.y);
+                });
+            });
+        } catch (e) { alert("Screen mirror failed: " + e); }
+    }
+
+    function showClick(x, y) {
+        const circle = document.createElement('div');
+        circle.className = 'click-indicator';
+        circle.style.left = (x * window.innerWidth) + 'px';
+        circle.style.top = (y * window.innerHeight) + 'px';
+        document.body.appendChild(circle);
+        setTimeout(() => circle.remove(), 600);
+    }
+
+    // --- VIEWER LOGIC ---
+    function startViewer() {
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('viewer-zone').classList.remove('hidden');
+        peer = new Peer();
+    }
+
+    function connectToHost() {
+        const code = document.getElementById('join-code').value;
+        conn = peer.connect(code);
+        
+        const call = peer.call(code, new MediaStream()); // Fake stream to trigger answer
+        call.on('stream', (remoteStream) => {
+            const video = document.getElementById('vr-video');
+            video.srcObject = remoteStream;
+            video.play();
+            
+            // Show VR Scene
+            document.getElementById('ui').style.display = 'none';
+            document.getElementById('vr-scene').classList.remove('hidden');
+            document.querySelector('a-scene').enterVR();
+        });
+
+        // Click Listener for VR
+        document.querySelector('a-video').addEventListener('click', (evt) => {
+            const uv = evt.detail.intersection.uv;
+            conn.send({ type: 'click', x: uv.x, y: 1 - uv.y });
+        });
+    }
+</script>
+</body>
 </html>
